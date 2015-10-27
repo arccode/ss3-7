@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:security="http://www.springframework.org/schema/security"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+          http://www.springframework.org/schema/beans/spring-beans-3.2.xsd
+          http://www.springframework.org/schema/security
+          http://www.springframework.org/schema/security/spring-security-3.2.xsd">
+
+    <!-- 启动method annotation -->
+    <security:global-method-security secured-annotations="enabled"/>
+
+    <!-- 权限控制 -->
+    <security:http realm="Protected API"
+             use-expressions="true"
+             create-session="stateless"
+             entry-point-ref="unauthorizedEntryPoint"
+             authentication-manager-ref="restAuthenticationManager">
+
+        <security:custom-filter ref="restAuthenticationFilter" position="FORM_LOGIN_FILTER"/>
+        <security:intercept-url pattern="/*" access="permitAll"/>
+        <security:intercept-url pattern="/secure/*" access="isFullyAuthenticated" />
+
+    </security:http>
+
+    <bean id="unauthorizedEntryPoint" class="com.arccode.core.security2.UnauthorizedEntryPoint" />
+
+    <!-- 认证管理 -->
+    <security:authentication-manager alias="restAuthenticationManager">
+        <security:authentication-provider user-service-ref="myUserDetailsService">
+
+        </security:authentication-provider>
+    </security:authentication-manager>
+
+    <!-- 凭证管理 -->
+    <bean id="tokenManager" class="com.arccode.core.security2.TokenManagerSingle"/>
+
+    <!-- 认证 -->
+    <bean id="authenticationService" class="com.arccode.core.security2.AuthenticationServiceDefault">
+        <constructor-arg name="authenticationManager" ref="restAuthenticationManager"/>
+        <constructor-arg name="tokenManager" ref="tokenManager" />
+    </bean>
+
+    <!-- 过滤链 -->
+    <bean id="restAuthenticationFilter" class="com.arccode.core.security2.TokenAuthenticationFilter">
+        <constructor-arg name="authenticationService" ref="authenticationService"/>
+        <constructor-arg name="logoutLink" value="/logout"/>
+    </bean>
+
+</beans>
